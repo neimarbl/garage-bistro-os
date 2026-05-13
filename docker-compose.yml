@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  db-master:
+    image: postgres:16-alpine
+    container_name: gb_db_master
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-garage_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-garage_bistro_prod}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_master_data:/var/lib/postgresql/data
+    networks:
+      - garage_lan_net
+    restart: unless-stopped
+
+  db-slave:
+    image: postgres:16-alpine
+    container_name: gb_db_slave
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-garage_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-garage_bistro_prod}
+    depends_on:
+      - db-master
+    volumes:
+      - pg_slave_data:/var/lib/postgresql/data
+    networks:
+      - garage_lan_net
+    restart: unless-stopped
+
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gb_backend_api
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-garage_admin}:${POSTGRES_PASSWORD:-secure_password_change_me}@db-master:5432/${POSTGRES_DB:-garage_bistro_prod}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db-master
+    networks:
+      - garage_lan_net
+    restart: always
+
+volumes:
+  pg_master_data:
+  pg_slave_data:
+
+networks:
+  garage_lan_net:
+    driver: bridge

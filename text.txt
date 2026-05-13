@@ -1,0 +1,19 @@
+garage-bistro-os/
+├── .github/
+│   └── workflows/          # Automações do GitHub Actions (CI/CD)
+├── backend/                # Código da API Python (FastAPI)
+│   ├── app/
+│   │   ├── core/           # Configurações globais, segurança e banco
+│   │   ├── models/         # Modelos de dados (SQLAlchemy)
+│   │   ├── repositories/   # Padrão Repository (Acesso a dados)
+│   │   ├── routers/        # Rotas e Endpoints da API
+│   │   └── services/       # Regras de Negócio (Use Cases)
+│   ├── tests/              # Testes automatizados (pytest)
+│   ├── Dockerfile          # Instalações do container backend
+│   └── requirements.txt    # Dependências Python
+├── frontend/               # Código do painel Web e Mobile (React PWA)
+├── docs/                   # Documentação arquitetural e fotos do Bistrô
+│   └── adr/                # Architecture Decision Records (.md)
+├── .env.example            # Modelo de variáveis de ambiente (sem senhas)
+├── .gitignore              # Filtro de arquivos para não subir no GitHub
+└── docker-compose.yml      # Orquestrador da Infraestrutura Local
