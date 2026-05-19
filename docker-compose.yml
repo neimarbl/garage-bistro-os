@@ -15,6 +15,12 @@ services:
     networks:
       - garage_lan_net
     restart: unless-stopped
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-garage_admin} -d ${POSTGRES_DB:-garage_bistro_prod}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   db-slave:
     image: postgres:16-alpine
@@ -40,11 +46,13 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-garage_admin}:${POSTGRES_PASSWORD:-secure_password_change_me}@db-master:5432/${POSTGRES_DB:-garage_bistro_prod}
     ports:
       - "8000:8000"
-    depends_on:
-      - db-master
     networks:
       - garage_lan_net
+    # 🔄 Garante que o contêiner reinicie sozinho se o banco recusar a primeira conexão:
     restart: always
+    # 📝 Lista simples aceita pela sua versão do docker-compose:
+    depends_on:
+      - db-master
 
 volumes:
   pg_master_data:

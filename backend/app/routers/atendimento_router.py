@@ -4,6 +4,10 @@ from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
 from app.repositories.atendimento_repository import AtendimentoRepository
+# Importação da conexão real criada na etapa anterior:
+from app.core.database import get_db 
+
+router = APIRouter(prefix="/atendimento", tags=["Atendimento / Salão"])
 
 # Dependência simulada para o Banco de Dados (será conectada ao engine global depois)
 def get_db():
