@@ -7,13 +7,12 @@ class PedidoRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def criar_pedido(self, mesa_id: int, comanda_id: int, itens_data: List[Dict[str, Any]]) -> Pedido:
-        # 1. Cria a instância do pedido principal
-        novo_pedido = Pedido(mesa_id=mesa_id, comanda_id=comanda_id)
+    def criar_pedido(self, mesa_id: int, comanda_id: int, itens_data: List[Dict[str, Any]], origem: str = "garcon") -> Pedido:
+        # Inclui o campo origem na criação
+        novo_pedido = Pedido(mesa_id=mesa_id, comanda_id=comanda_id, origem=origem)
         self.db.add(novo_pedido)
-        self.db.flush() # Executa o comando no banco para gerar o ID do pedido sem fechar a transação
+        self.db.flush()
 
-        # 2. Varre a lista de itens enviados pelo celular do garçom
         for item in itens_data:
             novo_item = ItemPedido(
                 pedido_id=novo_pedido.id,
@@ -23,7 +22,6 @@ class PedidoRepository:
             )
             self.db.add(novo_item)
         
-        # 3. Atualiza o status da mesa para ocupada automaticamente
         mesa = self.db.query(Mesa).filter(Mesa.id == mesa_id).first()
         if mesa:
             mesa.status = StatusMesa.OCUPADA
