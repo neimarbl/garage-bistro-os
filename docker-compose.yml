@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db-master:
     image: postgres:16-alpine
@@ -41,6 +39,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: garage_bistro_api:v1
     container_name: gb_backend_api
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-garage_admin}:${POSTGRES_PASSWORD:-secure_password_change_me}@db-master:5432/${POSTGRES_DB:-garage_bistro_prod}

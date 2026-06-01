@@ -5,6 +5,7 @@ from app.routers.atendimento_router import router as atendimento_router
 from app.core.database import engine
 from app.models.database_models import Base
 from app.routers.pedido_router import router as pedido_router 
+from app.routers.chamado_router import router as chamado_router
 
 # Cria as tabelas fisicamente no banco do Docker se elas não existirem
 Base.metadata.create_all(bind=engine)
