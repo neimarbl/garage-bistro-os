@@ -44,7 +44,7 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-garage_admin}:${POSTGRES_PASSWORD:-secure_password_change_me}@db-master:5432/${POSTGRES_DB:-garage_bistro_prod}
     ports:
-      - "8000:8000"
+      - "8080:8000"
     networks:
       - garage_lan_net
     # 🔄 Garante que o contêiner reinicie sozinho se o banco recusar a primeira conexão:
