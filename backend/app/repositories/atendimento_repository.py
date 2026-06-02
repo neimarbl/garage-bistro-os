@@ -1,4 +1,3 @@
-# backend/app/repositories/atendimento_repository.py
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from app.models.database_models import Mesa, Comanda, StatusMesa, StatusComanda
@@ -34,7 +33,10 @@ class AtendimentoRepository:
         self.db.refresh(mesa_pai)
         return mesa_pai
 
-    def ativar_comanda_pvc(self, numero_pvc: int) -> Comanda:
+    def activar_comanda_pvc(self, numero_pvc: int, token_sessao: str) -> Comanda:
+        """
+        Busca ou cria uma comanda ativa injetando o token de segurança obrigatório.
+        """
         comanda_existente = self.db.query(Comanda).filter(
             Comanda.numero_pvc == numero_pvc, 
             Comanda.status == StatusComanda.ATIVA
@@ -43,7 +45,11 @@ class AtendimentoRepository:
         if comanda_existente:
             return comanda_existente
             
-        nova_comanda = Comanda(numero_pvc=numero_pvc, status=StatusComanda.ATIVA)
+        nova_comanda = Comanda(
+            numero_pvc=numero_pvc, 
+            status=StatusComanda.ATIVA,
+            token_sessao=token_sessao
+        )
         self.db.add(nova_comanda)
         self.db.commit()
         self.db.refresh(nova_comanda)

@@ -1,21 +1,14 @@
-# backend/app/routers/atendimento_router.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy.orm import Session
 from app.repositories.atendimento_repository import AtendimentoRepository
-# Importação da conexão real criada na etapa anterior:
+from app.core.seguranca import gerar_token_comanda
+# 🔐 IMPORTAÇÃO DA CONEXÃO REAL DO BANCO DE DADOS:
 from app.core.database import get_db 
 
 router = APIRouter(prefix="/atendimento", tags=["Atendimento / Salão"])
 
-# Dependência simulada para o Banco de Dados (será conectada ao engine global depois)
-def get_db():
-    raise NotImplementedError("Conexão real com DB pendente de injeção global")
-
-router = APIRouter(prefix="/atendimento", tags=["Atendimento / Salão"])
-
-# Esquemas de validação de dados com Pydantic (Garantia de tipos de entrada)
 class AgrupamentoMesasRequest(BaseModel):
     numero_mesa_principal: int
     numeros_mesas_adicionais: List[int]
@@ -37,12 +30,23 @@ def agrupar_mesas(payload: AgrupamentoMesasRequest, db: Session = Depends(get_db
 @router.post("/comandas/ativar", status_code=status.HTTP_201_CREATED)
 def ativar_comanda(payload: AtivarComandaRequest, db: Session = Depends(get_db)):
     """
-    Associa e ativa um cartão de PVC físico ao fluxo de consumo de um cliente.
+    Associa e ativa um cartão de PVC físico ao fluxo de consumo, gerando o Token do QR Code.
     """
     repo = AtendimentoRepository(db)
-    comanda = repo.ativar_comanda_pvc(payload.numero_pvc)
+    
+    # 1. Gera o token criptográfico primeiro usando o algoritmo HMAC-SHA256
+    token_pvc = gerar_token_comanda(payload.numero_pvc)
+    
+    # 2. Salva no banco de dados injetando o token de segurança obrigatório
+    comanda = repo.activar_comanda_pvc(numero_pvc=payload.numero_pvc, token_sessao=token_pvc)
+    
+    # 3. Monta o link omnichannel de autoatendimento local para o QR Code do cliente
+    link_qr_code = f"http://192.168.111{comanda.numero_pvc}?token={comanda.token_sessao}"
+    
     return {
         "comanda_id": comanda.id,
         "numero_pvc": comanda.numero_pvc,
-        "status": comanda.status.value
+        "status": comanda.status.value,
+        "token_seguranca": comanda.token_sessao,
+        "url_qr_code_cliente": link_qr_code
     }
