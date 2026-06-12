@@ -1,4 +1,5 @@
 # backend/app/models/database_models.py
+from __future__ import annotations
 import enum
 from datetime import datetime
 from typing import List, Optional
@@ -64,7 +65,7 @@ class Comanda(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     numero_pvc: Mapped[int] = mapped_column(Integer, unique=True, nullable=False)
     status: Mapped[StatusComanda] = mapped_column(Enum(StatusComanda), default=StatusComanda.ATIVA)
-    token_sessao: Mapped[str] = mapped_column(String(255), nullable=False) # Token automático de segurança contra fraudes no QR Code
+    token_sessao: Mapped[str] = mapped_column(String(255), nullable=False)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     fechado_em: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
@@ -86,7 +87,7 @@ class Pedido(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     mesa_id: Mapped[int] = mapped_column(Integer, ForeignKey("mesas.id"), nullable=False)
     comanda_id: Mapped[int] = mapped_column(Integer, ForeignKey("comandas.id"), nullable=False)
-    origem: Mapped[OrigemPedido] = mapped_column(Enum(OrigemPedido), default=OrigemPedido.GARCON) # Garçom ou Cliente
+    origem: Mapped[OrigemPedido] = mapped_column(Enum(OrigemPedido), default=OrigemPedido.GARCON)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     mesa: Mapped["Mesa"] = relationship("Mesa", back_populates="pedidos")
@@ -105,7 +106,6 @@ class ItemPedido(Base):
     pedido: Mapped["Pedido"] = relationship("Pedido", back_populates="itens")
     produto: Mapped["Produto"] = relationship("Produto", back_populates="itens_pedido")
 
-# 🆕 NOVA TABELA PARA PAGAMENTOS FRACIONADOS E PARCIAIS
 class PagamentoParcial(Base):
     __tablename__ = "pagamentos_parciais"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -113,17 +113,36 @@ class PagamentoParcial(Base):
     valor: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     metodo: Mapped[MetodoPagamento] = mapped_column(Enum(MetodoPagamento), nullable=False)
     pago_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    id_transacao_externa: Mapped[Optional[str]] = mapped_column(String(100), nullable=True) # ID do PIX vindo do PagBank
+    id_transacao_externa: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     
     comanda: Mapped["Comanda"] = relationship("Comanda", back_populates="pagamentos")
 
-# 🆕 NOVA TABELA PARA CHAMADOS DE ATENDIMENTO (SOLICITAR GARÇOM)
 class ChamadoAtendimento(Base):
     __tablename__ = "chamados_atendimento"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     mesa_id: Mapped[int] = mapped_column(Integer, ForeignKey("mesas.id"), nullable=False)
-    tipo: Mapped[str] = mapped_column(String(50), default="duvida") # "duvida" ou "maquininha"
+    tipo: Mapped[str] = mapped_column(String(50), default="duvida")
     status: Mapped[StatusChamado] = mapped_column(Enum(StatusChamado), default=StatusChamado.ABERTO)
     criado_em: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
     mesa: Mapped["Mesa"] = relationship("Mesa", back_populates="chamados")
+
+# 🆕 INSERÇÃO DA CLASSE FALTANTE:
+class Insumo(Base):
+    __tablename__ = "insumos"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nome: Mapped[str] = mapped_column(String(100), nullable=False)
+    quantidade_atual: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)
+    quantidade_minima: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0)
+    data_validade: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    congelado: Mapped[bool] = mapped_column(Boolean, default=False)
+
+class FichaTecnica(Base):
+    __tablename__ = "fichas_tecnicas"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    produto_id: Mapped[int] = mapped_column(Integer, ForeignKey("produtos.id"), nullable=False)
+    insumo_id: Mapped[int] = mapped_column(Integer, ForeignKey("insumos.id"), nullable=False)
+    quantidade_gasta: Mapped[float] = mapped_column(Numeric(10, 3), nullable=False)
+
+    produto: Mapped["Produto"] = relationship("Produto")
+    insumo: Mapped["Insumo"] = relationship("Insumo")
