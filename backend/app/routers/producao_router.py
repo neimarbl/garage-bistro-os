@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.repositories.producao_repository import ProducaoRepository
 from app.models.database_models import StatusItem
 from app.core.websocket_manager import notifier
+from app.repositories.estoque_repository import EstoqueRepository
 
 router = APIRouter(prefix="/producao", tags=["KDS & Produção (Cozinha/Bar)"])
 
@@ -41,6 +42,12 @@ async def avancar_estagio_item(item_id: int, db: Session = Depends(get_db)):
     proximo_status = StatusItem.EM_PREPARO
     if item_atual.status == StatusItem.EM_PREPARO:
         proximo_status = StatusItem.PRONTO
+        # ⚡ BAIXA AUTOMÁTICA DE ESTOQUE: O prato ficou pronto, desconta os ingredientes brutos
+        estoque_repo = EstoqueRepository(db)
+        estoque_repo.descontar_estoque_por_produto(
+            produto_id=item_atual.produto_id,
+            quantidade_pedido=item_atual.quantidade
+        )
     elif item_atual.status == StatusItem.PRONTO:
         proximo_status = StatusItem.ENTREGUE
 

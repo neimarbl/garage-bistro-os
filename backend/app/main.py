@@ -10,6 +10,7 @@ from app.routers.pedido_router import router as pedido_router
 from app.routers.chamado_router import router as chamado_router 
 from app.routers.producao_router import router as producao_router 
 from app.routers.financeiro_router import router as financeiro_router
+from app.routers.estoque_router import router as estoque_router
 
 # Cria as tabelas fisicamente no banco do Docker se elas não existirem
 Base.metadata.create_all(bind=engine)
@@ -35,6 +36,7 @@ app.include_router(pedido_router)
 app.include_router(chamado_router)
 app.include_router(producao_router)
 app.include_router(financeiro_router)
+app.include_router(estoque_router)
 
 @app.get("/")
 async def root():
