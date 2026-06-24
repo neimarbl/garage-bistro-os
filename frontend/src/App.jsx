@@ -13,24 +13,34 @@ import { ValidacaoComanda } from './pages/cliente/ValidacaoComanda';
 import { CardapioCliente } from './pages/cliente/CardapioCliente';
 import { SucessoPedido } from './pages/cliente/SucessoPedido';
 
+// 🆕 Módulo KDS (TVs da Cozinha e do Bar)
+import { PainelKDS } from './pages/kds/PainelKDS';
+
 const FluxoNavegacaoMaster = () => {
     const { abrirMesaTrabalho, setComandaAtiva } = useAtendimento();
     
-    // Máquina de estados expandida para suportar ambos os perfis na mesma LAN
-    const [perfil, setPerfil] = useState('DESCONHECIDO'); // GARCOM ou CLIENTE
+    // Máquina de estados de perfil e tela
+    const [perfil, setPerfil] = useState('DESCONHECIDO'); // KDS, CLIENTE ou GARCOM
     const [telaAtiva, setTelaAtiva] = useState('INICIAL');
 
-    // 1. Interceptador Omnichannel de URL (Gatilho de Entrada)
+    // 1. Interceptador Omnichannel de URL (Gatilho de Entrada Geográfico e de Hardware)
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tokenHmac = params.get('token');
+        const modoOperacao = params.get('modo');
 
-        if (tokenHmac) {
-            // 🔒 Se hvac/token existir na URL, chaveia o app instantaneamente para o modo CLIENTE
+        // 📺 1. Identifica se o dispositivo é uma TV de produção KDS
+        if (modoOperacao === 'kds') {
+            setPerfil('KDS');
+            setTelaAtiva('PAINEL_PRODUCAO');
+        } 
+        // 🛡️ 2. Identifica se o dispositivo é um smartphone de cliente via QR Code seguro
+        else if (tokenHmac) {
             setPerfil('CLIENTE');
             setTelaAtiva('VALIDACAO_HMAC');
-        } else {
-            // 💼 Se a URL estiver limpa, chaveia para o modo operacional do GARÇOM
+        } 
+        // 💼 3. Se a URL estiver limpa, assume o perfil padrão do Garçom no salão
+        else {
             setPerfil('GARCOM');
             setTelaAtiva('MAPA_MESAS');
         }
@@ -48,6 +58,8 @@ const FluxoNavegacaoMaster = () => {
     };
 
     // 3. Orquestrador de Telas State-Driven (Clean Architecture)
+    
+    // Perfil Operacional: Garçom (Frente A)
     if (perfil === 'GARCOM') {
         switch (telaAtiva) {
             case 'MAPA_MESAS':
@@ -61,6 +73,7 @@ const FluxoNavegacaoMaster = () => {
         }
     }
 
+    // Perfil Operacional: Autoatendimento Cliente (Frente B)
     if (perfil === 'CLIENTE') {
         switch (telaAtiva) {
             case 'VALIDACAO_HMAC':
@@ -74,7 +87,17 @@ const FluxoNavegacaoMaster = () => {
         }
     }
 
-    // Tela de transição rápida enquanto o useEffect lê a URL
+    // 🆕 Perfil Operacional: Monitores KDS das TVs (Cozinha/Bar)
+    if (perfil === 'KDS') {
+        switch (telaAtiva) {
+            case 'PAINEL_PRODUCAO':
+                return <PainelKDS />;
+            default:
+                return <PainelKDS />;
+        }
+    }
+
+    // Tela de transição rápida enquanto o useEffect descriptografa a rota
     return (
         <div className="flex h-screen items-center justify-center bg-zinc-950 text-white text-xs font-mono tracking-widest uppercase">
             Sincronizando Ecossistema Garage...
