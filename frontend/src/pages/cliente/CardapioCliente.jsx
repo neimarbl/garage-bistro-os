@@ -41,7 +41,7 @@ export const CardapioCliente = ({ onPedidoSucesso }) => {
         const payload = {
             mesa_id: mesaAtiva,
             comanda_id: comandaAtiva, // Corresponde ao numero_pvc salvo no contexto
-            token_hmac: tokenHmac,     # Elemento crucial exigido pela blindagem antifraude
+            token_hmac: tokenHmac,     // Elemento crucial exigido pela blindagem antifraude
             origem: "autoatendimento",
             itens: carrinho.map(item => ({
                 produto_id: item.id,
