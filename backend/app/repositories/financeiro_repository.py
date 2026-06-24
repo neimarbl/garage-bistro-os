@@ -1,13 +1,15 @@
 from typing import Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models.database_models import Comanda, ItemPedido, Produto, StatusItem, PagamentoParcial
 
 class FinanceiroRepository:
     def __init__(self, db: Session):
         self.db = db
 
     def calcular_extrato_comanda(self, comanda_id: int, valor_cover: float = 0.0) -> Dict[str, Any]:
+        # 🟢 Lazy Import Local: Evita o travamento cíclico com o arquivo de modelos no boot
+        from app.models.database_models import ItemPedido, StatusItem, PagamentoParcial
+
         itens_consumidos = self.db.query(ItemPedido).filter(
             ItemPedido.pedido.has(comanda_id=comanda_id),
             ItemPedido.status != StatusItem.PENDENTE
@@ -32,7 +34,10 @@ class FinanceiroRepository:
             "saldo_restante": round(max(saldo_restante, 0.0), 2)
         }
 
-    def registrar_pagamento_parcial(self, comanda_id: int, valor: float, metodo: str, transacao_id: str = None) -> PagamentoParcial:
+    def registrar_pagamento_parcial(self, comanda_id: int, valor: float, metodo: str, transacao_id: str = None) -> Any:
+        # 🟢 Lazy Import Local
+        from app.models.database_models import PagamentoParcial
+
         pagamento = PagamentoParcial(
             comanda_id=comanda_id,
             valor=valor,

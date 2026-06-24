@@ -146,3 +146,33 @@ class FichaTecnica(Base):
 
     produto: Mapped["Produto"] = relationship("Produto")
     insumo: Mapped["Insumo"] = relationship("Insumo")
+
+# Adicione este bloco no final do arquivo backend/app/models/database_models.py
+
+class TipoCusteio(enum.Enum):
+    TOTAL_EMPRESA = "total_empresa"       # Empresa/Noivos pagam 100% do consumo
+    INDIVIDUAL = "individual"             # Cada um paga o seu consumo (padrão)
+    HIBRIDO_FIXO = "hibrido_fixo"         # Empresa paga comidas, cliente paga bebidas
+    CONSUMACAO_MINIMA = "consumacao_min" # Cliente paga individual, mas com valor mínimo obrigatório
+
+class Evento(Base):
+    __tablename__ = "eventos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    nome: Mapped[str] = mapped_column(String(150), nullable=False) # Ex: "Festa de Fim de Ano Empresa X"
+    data_evento: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    tipo_custeio: Mapped[TipoCusteio] = mapped_column(Enum(TipoCusteio), default=TipoCusteio.INDIVIDUAL)
+    limite_orcamento_empresa: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0) # Teto de gastos B2B
+    ativo: Mapped[bool] = mapped_column(Boolean, default=True) # Apenas um evento pode estar ativo por vez na garagem
+
+    # Relacionamento: Um evento agrupa várias comandas daquela noite
+    comandas: Mapped[List["ComandaEventos"]] = relationship("ComandaEventos", back_populates="evento")
+
+class ComandaEventos(Base):
+    __tablename__ = "comandas_eventos"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    evento_id: Mapped[int] = mapped_column(Integer, ForeignKey("eventos.id"), nullable=False)
+    comanda_id: Mapped[int] = mapped_column(Integer, ForeignKey("comandas.id"), nullable=False)
+    evento: Mapped["Evento"] = relationship("Evento", back_populates="comandas")
+    #comanda: Mapped["Comanda"] = relationship("Comanda")
