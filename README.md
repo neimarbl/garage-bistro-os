@@ -1,4 +1,4 @@
-# 🚀 Garage Bistrô OS
+# 🚀 DEV Bistro II — Garage Bistrô OS
 
 [![FastAPI](https://shields.io)](https://tiangolo.com)
 [![React](https://shields.io)](https://reactjs.org)
@@ -69,8 +69,28 @@ garage-bistro-os/
 │   │   └── main.jsx        # Ponto de Inicialização DOM React 18 StrictMode
 │   ├── Dockerfile          # Build Multi-Stage Otimizado
 │   └── nginx.conf          # Configuração SPA Nginx Alpine (Evita erros 404)
+├── tests/
+│   ├── locustfile.py       # ⚡ Suite Mestre de Testes de Carga e Estresse Híbridos
+│   └── requirements.txt    # Dependências de simulação assíncrona (Locust + WS)
 └── docker-compose.yml      # Orquestrador da Malha Multi-Container (PostgreSQL Master-Slave)
 ```
+
+---
+
+## ⚡ Suite de Testes de Carga e Estresse (Locust + WebSockets)
+
+O ecossistema conta com uma suite de testes de desempenho automatizada via **Locust** para simular o comportamento de pico na LAN do salão, avaliando o comportamento sob concorrência rigorosa:
+
+*   **Perfil Garçom (HTTP Heavy):** Usuários virtuais concorrentes executando varreduras de mesas e efetuando múltiplos disparos de payloads complexos de pedidos (`POST /pedidos/`).
+*   **Perfil Cliente (Stateful WebSocket Connection):** Abre conexões persistentes síncronas com o barramento do FastAPI (`ws://`), avaliando a estabilidade da memória do servidor ASGI (Uvicorn) sob *broadcasts* massivos sem vazamento de memória ou quedas de conexão.
+
+Para rodar os testes de estresse locais na porta `8080` do backend:
+```bash
+cd tests
+pip install -m requirements.txt
+locust -f locustfile.py --host http://localhost:8080
+```
+Acesse o painel web em `http://localhost:8089` para monitorar gráficos de Requisições por Segundo (RPS) e Percentis de Latência em tempo real.
 
 ---
 
@@ -79,10 +99,6 @@ garage-bistro-os/
 Toda a infraestrutura, banco de dados relacional e servidores estão empacotados e automatizados. Garanta que o Docker e o WSL2 estão ativos e execute um único comando centralizado na raiz do projeto:
 
 ```bash
-# Clone o repositório
-git clone https://github.com
-cd garage-bistro-os
-
 # Suba a infraestrutura completa unificada
 docker compose up -d --build
 ```
