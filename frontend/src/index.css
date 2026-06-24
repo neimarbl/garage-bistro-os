@@ -1,0 +1,19 @@
+/* frontend/src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* UX de Aplicativo Móvel: Desativa a rolagem de rebote elástico nativa do Safari/Chrome */
+html, body {
+  overscroll-behavior-y: contain;
+  overflow-x: hidden;
+}
+
+/* Oculta barras de rolagem horizontais mantendo a funcionalidade de swipe no toque */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
