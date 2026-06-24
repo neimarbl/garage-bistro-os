@@ -13,33 +13,41 @@ import { ValidacaoComanda } from './pages/cliente/ValidacaoComanda';
 import { CardapioCliente } from './pages/cliente/CardapioCliente';
 import { SucessoPedido } from './pages/cliente/SucessoPedido';
 
-// 🆕 Módulo KDS (TVs da Cozinha e do Bar)
+// Módulo KDS (TVs da Cozinha e do Bar)
 import { PainelKDS } from './pages/kds/PainelKDS';
+
+// 🆕 Módulo do Caixa (Terminal Administrativo e Financeiro)
+import { PainelCaixa } from './pages/caixa/PainelCaixa';
 
 const FluxoNavegacaoMaster = () => {
     const { abrirMesaTrabalho, setComandaAtiva } = useAtendimento();
     
-    // Máquina de estados de perfil e tela
-    const [perfil, setPerfil] = useState('DESCONHECIDO'); // KDS, CLIENTE ou GARCOM
+    // Máquina de estados expandida para suportar os quatro perfis na mesma LAN
+    const [perfil, setPerfil] = useState('DESCONHECIDO'); // GARCOM, CLIENTE, KDS ou CAIXA
     const [telaAtiva, setTelaAtiva] = useState('INICIAL');
 
-    // 1. Interceptador Omnichannel de URL (Gatilho de Entrada Geográfico e de Hardware)
+    // 1. Interceptador Omnichannel de URL (Gatilho de Entrada de Perfil por Hardware/QR Code)
     useEffect(() => {
         const params = new URLSearchParams(window.location.search);
         const tokenHmac = params.get('token');
         const modoOperacao = params.get('modo');
 
-        // 📺 1. Identifica se o dispositivo é uma TV de produção KDS
-        if (modoOperacao === 'kds') {
+        // 📊 1. Identifica se o dispositivo é o Terminal Desktop do Caixa
+        if (modoOperacao === 'caixa') {
+            setPerfil('CAIXA');
+            setTelaAtiva('PAINEL_FINANCEIRO');
+        }
+        // 📺 2. Identifica se o dispositivo é uma TV de produção KDS
+        else if (modoOperacao === 'kds') {
             setPerfil('KDS');
             setTelaAtiva('PAINEL_PRODUCAO');
         } 
-        // 🛡️ 2. Identifica se o dispositivo é um smartphone de cliente via QR Code seguro
+        // 🛡️ 3. Identifica se o dispositivo é um smartphone de cliente via QR Code seguro
         else if (tokenHmac) {
             setPerfil('CLIENTE');
             setTelaAtiva('VALIDACAO_HMAC');
         } 
-        // 💼 3. Se a URL estiver limpa, assume o perfil padrão do Garçom no salão
+        // 💼 4. Se a URL estiver limpa, assume o perfil padrão do Garçom no salão
         else {
             setPerfil('GARCOM');
             setTelaAtiva('MAPA_MESAS');
@@ -87,7 +95,7 @@ const FluxoNavegacaoMaster = () => {
         }
     }
 
-    // 🆕 Perfil Operacional: Monitores KDS das TVs (Cozinha/Bar)
+    // Perfil Operacional: Monitores KDS das TVs (Cozinha/Bar)
     if (perfil === 'KDS') {
         switch (telaAtiva) {
             case 'PAINEL_PRODUCAO':
@@ -97,7 +105,17 @@ const FluxoNavegacaoMaster = () => {
         }
     }
 
-    // Tela de transição rápida enquanto o useEffect descriptografa a rota
+    // 🆕 Perfil Operacional: Terminal Desktop do Caixa
+    if (perfil === 'CAIXA') {
+        switch (telaAtiva) {
+            case 'PAINEL_FINANCEIRO':
+                return <PainelCaixa />;
+            default:
+                return <PainelCaixa />;
+        }
+    }
+
+    // Tela de transição rápida enquanto o useEffect processa as chaves da URL
     return (
         <div className="flex h-screen items-center justify-center bg-zinc-950 text-white text-xs font-mono tracking-widest uppercase">
             Sincronizando Ecossistema Garage...
