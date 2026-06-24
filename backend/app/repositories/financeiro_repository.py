@@ -48,3 +48,39 @@ class FinanceiroRepository:
         self.db.commit()
         self.db.refresh(pagamento)
         return pagamento
+    
+@staticmethod
+def obter_resumo_diario(db: Session) -> Dict[str, float]:
+    from app.models.database_models import PagamentoParcial, MetodoPagamento
+    from datetime import datetime, time
+
+    hoje_inicio = datetime.combine(datetime.utcnow().date(), time.min)
+    hoje_fim = datetime.combine(datetime.utcnow().date(), time.max)
+
+    # Agrega o somatório total de pagamentos do turno atual (hoje)
+    total_dia = db.query(func.sum(PagamentoParcial.valor)).filter(
+        PagamentoParcial.pago_em.between(hoje_inicio, hoje_fim)
+    ).scalar() or 0.0
+
+    # Segrega os valores por método usando agregação condicional
+    total_pix = db.query(func.sum(PagamentoParcial.valor)).filter(
+        PagamentoParcial.pago_em.between(hoje_inicio, hoje_fim),
+        PagamentoParcial.metodo == MetodoPagamento.PIX
+    ).scalar() or 0.0
+
+    total_cartao = db.query(func.sum(PagamentoParcial.valor)).filter(
+        PagamentoParcial.pago_em.between(hoje_inicio, hoje_fim),
+        PagamentoParcial.metodo.in_([MetodoPagamento.CREDITO, MetodoPagamento.DEBITO])
+    ).scalar() or 0.0
+
+    total_dinheiro = db.query(func.sum(PagamentoParcial.valor)).filter(
+        PagamentoParcial.pago_em.between(hoje_inicio, hoje_fim),
+        PagamentoParcial.metodo == MetodoPagamento.DINHEIRO
+    ).scalar() or 0.0
+
+    return {
+        "total_dia": round(float(total_dia), 2),
+        "total_pix": round(float(total_pix), 2),
+        "total_cartao": round(float(total_cartao), 2),
+        "total_dinheiro": round(float(total_dinheiro), 2)
+    }

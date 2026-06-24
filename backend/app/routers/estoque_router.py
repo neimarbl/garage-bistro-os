@@ -43,3 +43,10 @@ def obter_alertas_estoque(db: Session = Depends(get_db)):
     """
     repo = EstoqueRepository(db)
     return repo.listar_alertas_criticos()
+
+@router.get("/alertas-criticos", status_code=status.HTTP_200_OK)
+def obter_alertas_almoxarifado(db: Session = Depends(get_db)):
+    """
+    Varre os lotes físicos do PostgreSQL gerando matrizes preventivas de perdas e validades.
+    """
+    return EstoqueRepository.calcular_alertas_criticos(db)

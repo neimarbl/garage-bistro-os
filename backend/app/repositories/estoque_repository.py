@@ -63,3 +63,39 @@ class EstoqueRepository:
             })
 
         return alertas
+
+class EstoqueRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    @staticmethod
+    def calcular_alertas_criticos(db: Session) -> List[Dict[str, Any]]:
+        from app.models.database_models import Insumo
+        
+        alertas = []
+        hoje = datetime.utcnow()
+        limite_validade = hoje + timedelta(days=5) # Janela crítica de 5 dias solicitada
+
+        # 1. Busca todos os insumos cadastrados no almoxarifado
+        insumos = db.query(Insumo).all()
+
+        for insumo in insumos:
+            # Alerta de Nível Crítico (Abaixo da quantidade mínima configurada)
+            if float(insumo.quantidade_atual) <= float(insumo.quantidade_minima):
+                alertas.append({
+                    "tipo": "CRÍTICO",
+                    "insumo_nome": insumo.nome,
+                    "quantidade_atual": float(insumo.quantidade_atual),
+                    "mensagem": f"⚠️ Ruptura iminente! Saldo atual está abaixo do mínimo operacional."
+                })
+
+            # Alerta de Validade Próxima (Insumos congelados ou resfriados vencendo em < 5 dias)
+            if insumo.data_validade and hoje <= insumo.data_validade <= limite_validade:
+                alertas.append({
+                    "tipo": "VALIDADE",
+                    "insumo_nome": insumo.nome,
+                    "data_validade": insumo.data_validade.isoformat(),
+                    "mensagem": f"🚨 Risco de perda financeira! Insumo está a menos de 5 dias do vencimento."
+                })
+
+        return alertas
