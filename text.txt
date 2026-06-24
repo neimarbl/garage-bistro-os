@@ -1,19 +1,25 @@
-garage-bistro-os/
-├── .github/
-│   └── workflows/          # Automações do GitHub Actions (CI/CD)
-├── backend/                # Código da API Python (FastAPI)
+garage-bistro-os/ (main)
+├── backend/
 │   ├── app/
-│   │   ├── core/           # Configurações globais, segurança e banco
-│   │   ├── models/         # Modelos de dados (SQLAlchemy)
-│   │   ├── repositories/   # Padrão Repository (Acesso a dados)
-│   │   ├── routers/        # Rotas e Endpoints da API
-│   │   └── services/       # Regras de Negócio (Use Cases)
-│   ├── tests/              # Testes automatizados (pytest)
-│   ├── Dockerfile          # Instalações do container backend
-│   └── requirements.txt    # Dependências Python
-├── frontend/               # Código do painel Web e Mobile (React PWA)
-├── docs/                   # Documentação arquitetural e fotos do Bistrô
-│   └── adr/                # Architecture Decision Records (.md)
-├── .env.example            # Modelo de variáveis de ambiente (sem senhas)
-├── .gitignore              # Filtro de arquivos para não subir no GitHub
-└── docker-compose.yml      # Orquestrador da Infraestrutura Local
+│   │   ├── core/           # database.py, seguranca.py, websocket_manager.py
+│   │   ├── models/         # database_models.py (SQLAlchemy 2.0)
+│   │   ├── repositories/   # estoque_repository.py, financeiro_repository.py, evento_repository.py
+│   │   ├── routers/        # atendimento_router.py, financeiro_router.py, estoque_router.py
+│   │   └── main.py         # Configuração CORS LAN e injeção central
+│   └── Dockerfile          # Ambiente ASGI Uvicorn Python 3.11
+├── frontend/
+│   ├── src/
+│   │   ├── context/        # SocketContext.jsx, AtendimentoContext.jsx
+│   │   ├── pages/          # SelecaoMesa.jsx, LancarPedido.jsx, ResumoConta.jsx
+│   │   │   ├── cliente/    # ValidacaoComanda.jsx, CardapioCliente.jsx, SucessoPedido.jsx
+│   │   │   ├── kds/        # PainelKDS.jsx, CartaoProducao.jsx (Teclado USB)
+│   │   │   └── caixa/      # PainelCaixa.jsx (Terminal Desktop)
+│   │   ├── App.jsx         # Orquestrador Master de Perfis
+│   │   └── main.jsx        # Ponto de Inicialização DOM React 18
+│   ├── Dockerfile          # Build Multi-Stage Otimizado
+│   └── nginx.conf          # Configuração Router Nginx Alpine
+├── tests/
+│   ├── locustfile.py       # Script de Carga Híbrido HTTP/WS
+│   └── requirements.txt    # Dependências do Locust
+├── docker-compose.yml      # Orquestrador da Malha (PostgreSQL Master-Slave + API + PWA)
+└── seed.sql                # Carga Inicial de Teste (Mesas, Cardápio, Comanda 15)
