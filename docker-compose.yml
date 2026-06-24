@@ -53,6 +53,21 @@ services:
     depends_on:
       - db-master
 
+  # 🟢 ADICIONADO: O Motor do PWA Omnichannel na LAN da Garagem
+  frontend-pwa:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: garage_bistro_pwa:v1
+    container_name: gb_frontend_pwa
+    ports:
+      - "5173:80" # Expõe o app na porta 5173 externa, batendo na porta 80 do Nginx
+    networks:
+      - garage_lan_net
+    restart: always
+    depends_on:
+      - backend-api
+
 volumes:
   pg_master_data:
   pg_slave_data:
