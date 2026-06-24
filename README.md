@@ -1,4 +1,4 @@
-# Garage Bistrô OS
+# 🚀 Garage Bistrô OS
 
 [![FastAPI](https://shields.io)](https://tiangolo.com)
 [![React](https://shields.io)](https://reactjs.org)
