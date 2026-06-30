@@ -1,34 +1,38 @@
 # backend/app/core/database.py
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-# Recupera a URL do banco das variáveis de ambiente do Docker com um fallback seguro
+# 🔄 CORREÇÃO: O driver assíncrono do psycopg exige o prefixo 'postgresql+psycopg' na URL
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://garage_admin:secure_password_change_me@db-master:5432/garage_bistro_prod"
+    "postgresql+psycopg://postgres:postgres@db-master:5432/garage_bistro"
 )
 
-# O engine é o gerenciador de conexões físicas com o banco do Docker
-engine = create_engine(
+# 🔄 CORREÇÃO: Utiliza o create_async_engine para conexões sem bloqueio de thread (Non-blocking)
+engine = create_async_engine(
     DATABASE_URL,
-    # Configurações recomendadas para evitar conexões presas ou lentas na rede local
-    pool_size=10,
-    max_overflow=20,
+    pool_size=15,          # Otimizado para alta concorrência de smartphones corporativos
+    max_overflow=25,
     pool_pre_ping=True
 )
 
-# O SessionLocal age como uma fábrica de sessões de conversação com o banco de dados
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# 🔄 CORREÇÃO: Utiliza o async_sessionmaker para fabricar sessões assíncronas AsyncSession
+AsyncSessionLocal = async_sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine,
+    class_=AsyncSession
+)
 
-def get_db():
+# 🔄 CORREÇÃO: Função renomeada para get_async_db acompanhando o modificador async/await
+async def get_async_db():
     """
-    Injetor de Dependência (Dependency Injection) para o FastAPI.
-    Garante que cada requisição do celular do garçom abra uma conexão única 
-    com o banco e a feche imediatamente após o término do pedido, evitando vazamento de memória.
+    Injetor de Dependência Assíncrono para o FastAPI.
+    Garante concorrência nativa via asyncio para osPWAs de atendimento e TVs da garagem,
+    liberando a conexão imediatamente de forma assíncrona após cada operação.
     """
-    db: Session = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    async with AsyncSessionLocal() as db:
+        try:
+            yield db
+        finally:
+            await db.close()
