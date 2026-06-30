@@ -15,7 +15,7 @@ export const ResumoConta = ({ onVoltar }) => {
         try {
             // Se houver uma comanda ativa, busca por ela, caso contrário usa a mesa
             const idBusca = comandaAtiva || mesaAtiva;
-            const response = await fetch(`http://192.168.111{idBusca}/extrato?cover=${coverArtistico}`);
+            const response = await fetch(`${import.meta.env.VITE_API_URL}{idBusca}/extrato?cover=${coverArtistico}`);
             if (!response.ok) throw new Error("Falha ao computar extrato");
             const data = await response.json();
             setExtrato(data);

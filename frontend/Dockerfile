@@ -4,6 +4,13 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+
+# Captura o argumento de build enviado pelo Docker Compose
+ARG VITE_API_URL
+# Converte o argumento em uma variável visível para o compilador do Vite
+ENV VITE_API_URL=$VITE_API_URL
+
+# Executa a compilação injetando a URL base correta no JavaScript estático
 RUN npm run build
 
 # Estágio 2: Ambiente de Produção Otimizado (Imagem final de execução)

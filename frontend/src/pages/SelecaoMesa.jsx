@@ -18,7 +18,7 @@ export const SelecaoMesa = ({ onSelecionarMesa }) => {
     useEffect(() => {
         const buscarMesas = async () => {
             try {
-                const response = await fetch('http://192.168.111');
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/atendimento/mesas`);
                 const data = await response.json();
                 setMesas(data);
             } catch (error) {

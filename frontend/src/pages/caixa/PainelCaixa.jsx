@@ -9,21 +9,21 @@ export const PainelCaixa = () => {
     const [comandasAbertas, setComandasAbertas] = useState([]);
     const [carregando, setCarregando] = useState(true);
 
-    // 1. Busca os dados de auditoria financeira e alertas críticos de validade/lote (Porta 8080)
+            // 1. Busca os dados de auditoria financeira e alertas críticos de validade/lote (Porta 8080)
     const carregarDadosPainel = useCallback(async () => {
         try {
-            // Busca alertas de estoque crítico e validades (< 5 dias)
-            const resEstoque = await fetch('http://192.168.111');
+            // 📦 Consome o 'estoque_router' para buscar alertas de estoque crítico e validades (< 5 dias)
+            const resEstoque = await fetch(`${import.meta.env.VITE_API_URL}/estoque/alertas-criticos`);
             const dataEstoque = await resEstoque.json();
             setAlertasEstoque(dataEstoque);
 
-            // Busca agregação matemática do fechamento do dia
-            const resFinanceiro = await fetch('http://192.168.111');
+            // 💰 Consome o 'financeiro_router' para buscar a agregação matemática do fechamento do dia
+            const resFinanceiro = await fetch(`${import.meta.env.VITE_API_URL}/financeiro/resumo-diario`);
             const dataFinanceiro = await resFinanceiro.json();
             setResumoFinanceiro(dataFinanceiro);
 
-            // Busca comandas ativas na LAN para monitoramento de mesa
-            const resComandas = await fetch('http://192.168.111');
+            // 📋 Consome o 'atendimento_router' para buscar as comandas ativas na LAN para monitoramento
+            const resComandas = await fetch(`${import.meta.env.VITE_API_URL}/atendimento/comanda/{numero_pvc}/validar`);
             const dataComandas = await resComandas.json();
             setComandasAbertas(dataComandas);
         } catch (error) {
@@ -32,6 +32,8 @@ export const PainelCaixa = () => {
             setCarregando(false);
         }
     }, []);
+ // Adicionado o array de dependências vazio padrão do useCallback
+
 
     useEffect(() => {
         carregarDadosPainel();
