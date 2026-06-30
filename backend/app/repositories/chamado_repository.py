@@ -1,32 +1,45 @@
 # backend/app/repositories/chamado_repository.py
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession  # 🔄 CORREÇÃO: Utiliza sessão assíncrona
+from sqlalchemy.future import select                # 🔄 CORREÇÃO: Sintaxe de consulta SQLAlchemy 2.0
 from app.models.database_models import ChamadoAtendimento, StatusChamado
-from typing import List
+from typing import List, Optional
 
 class ChamadoRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def criar_chamado(self, mesa_id: int, tipo: str) -> ChamadoAtendimento:
+    # 🔄 CORREÇÃO: Transformado em método assíncrono
+    async def criar_chamado(self, mesa_id: int, tipo: str) -> ChamadoAtendimento:
         novo_chamado = ChamadoAtendimento(
             mesa_id=mesa_id,
             tipo=tipo,  # "duvida" ou "maquininha"
             status=StatusChamado.ABERTO
         )
         self.db.add(novo_chamado)
-        self.db.commit()
-        self.db.refresh(novo_chamado)
+        await self.db.commit()   # 🔄 CORREÇÃO: Commit assíncrono
+        await self.db.refresh(novo_chamado)  # 🔄 CORREÇÃO: Refresh assíncrono
         return novo_chamado
 
-    def atender_chamado(self, chamado_id: int) -> bool:
-        chamado = self.db.query(ChamadoAtendimento).filter(ChamadoAtendimento.id == chamado_id).first()
+    # 🔄 CORREÇÃO: Retorna o objeto atualizado ou None para manter consistência com o router
+    async def atender_chamado(self, chamado_id: int) -> Optional[ChamadoAtendimento]:
+        # 🔄 CORREÇÃO: Consulta reescrita usando select() assíncrono
+        query = select(ChamadoAtendimento).filter(ChamadoAtendimento.id == chamado_id)
+        result = await self.db.execute(query)
+        chamado = result.scalars().first()
+        
         if chamado:
             chamado.status = StatusChamado.ATENDIDO
-            self.db.commit()
-            return True
-        return False
+            await self.db.commit()  # 🔄 CORREÇÃO: Commit assíncrono
+            return chamado
+        return None
 
-    def listar_chamados_ativos(self) -> List[ChamadoAtendimento]:
-        return self.db.query(ChamadoAtendimento).filter(
-            ChamadoAtendimento.status == StatusChamado.ABERTO
-        ).order_by(ChamadoAtendimento.criado_em.asc()).all()
+    # 🔄 CORREÇÃO: Transformado em método assíncrono
+    async def listar_chamados_ativos(self) -> List[ChamadoAtendimento]:
+        # 🔄 CORREÇÃO: Consulta reescrita usando select() assíncrono
+        query = (
+            select(ChamadoAtendimento)
+            .filter(ChamadoAtendimento.status == StatusChamado.ABERTO)
+            .order_by(ChamadoAtendimento.criado_em.asc())
+        )
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
