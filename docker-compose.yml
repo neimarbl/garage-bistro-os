@@ -2,38 +2,57 @@ services:
   db-master:
     image: postgres:16-alpine
     container_name: gb_db_master
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-garage_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
-      POSTGRES_DB: ${POSTGRES_DB:-garage_bistro_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-garage_bistro}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
     ports:
       - "5432:5432"
     volumes:
       - pg_master_data:/var/lib/postgresql/data
     networks:
       - garage_lan_net
-    restart: unless-stopped
-    
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-garage_admin} -d ${POSTGRES_DB:-garage_bistro_prod}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+    restart: always
+    command: [
+      "postgres",
+      "-c", "wal_level=replica",
+      "-c", "max_wal_senders=10",
+      "-c", "max_replication_slots=10",
+      "-c", "listen_addresses=*"
+    ]
 
   db-slave:
     image: postgres:16-alpine
     container_name: gb_db_slave
+    user: postgres
+    env_file:
+      - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-garage_admin}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password_change_me}
-      POSTGRES_DB: ${POSTGRES_DB:-garage_bistro_prod}
-    depends_on:
-      - db-master
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-garage_bistro}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
     volumes:
       - pg_slave_data:/var/lib/postgresql/data
     networks:
       - garage_lan_net
-    restart: unless-stopped
+    restart: always
+    depends_on:
+      - db-master
+    command: >
+      sh -c "
+      if [ ! -s /var/lib/postgresql/data/PG_VERSION ]; then
+        echo 'Iniciando clonagem do banco Master para a Réplica Slave...';
+        until pg_basebackup -h db-master -D /var/lib/postgresql/data -U postgres -vP -R -X stream --no-password; do
+          echo 'Aguardando Master liberar conexões de replicação...';
+          sleep 2;
+        done;
+      fi;
+      exec postgres;
+      "
 
   backend-api:
     build:
@@ -41,27 +60,37 @@ services:
       dockerfile: Dockerfile
     image: garage_bistro_api:v1
     container_name: gb_backend_api
+    env_file:
+      - .env
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-garage_admin}:${POSTGRES_PASSWORD:-secure_password_change_me}@db-master:5432/${POSTGRES_DB:-garage_bistro_prod}
+      # 🔄 CORREÇÃO: Consome diretamente a URL assíncrona parametrizada no .env (evita sobrescrever o +psycopg)
+      - DATABASE_URL=${DATABASE_URL}
     ports:
       - "8080:8000"
+    volumes:
+      - ./backend:/app
     networks:
       - garage_lan_net
-    # 🔄 Garante que o contêiner reinicie sozinho se o banco recusar a primeira conexão:
     restart: always
-    # 📝 Lista simples aceita pela sua versão do docker-compose:
     depends_on:
       - db-master
 
-  # 🟢 ADICIONADO: O Motor do PWA Omnichannel na LAN da Garagem
   frontend-pwa:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        # Encaminha a variável do .env raiz para o Dockerfile em tempo de build
+        - VITE_API_URL=${VITE_API_URL:-http://192.168.111.124:8080}
     image: garage_bistro_pwa:v1
     container_name: gb_frontend_pwa
     ports:
-      - "5173:80" # Expõe o app na porta 5173 externa, batendo na porta 80 do Nginx
+      - "5173:80"
+    # ⚡ DESENVOLVIMENTO (OPCIONAL): Se o seu Dockerfile clonar o código fonte para rodar o Vite em Dev mode, 
+    # remova o comentário das linhas abaixo para habilitar o Hot Reload instantâneo no seu VS Code:
+    # volumes:
+    #   - ./frontend:/app
+    #   - /app/node_modules
     networks:
       - garage_lan_net
     restart: always
