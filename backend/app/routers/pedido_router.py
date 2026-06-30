@@ -2,8 +2,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from sqlalchemy.orm import Session
-from app.core.database import get_db
+from sqlalchemy.ext.asyncio import AsyncSession  # 🔄 CORREÇÃO: Importado tipo assíncrono correto
+from app.core.database import get_async_db
 from app.repositories.pedido_repository import PedidoRepository
 from app.models.database_models import OrigemPedido
 from app.core.websocket_manager import notifier # Importa o gerenciador de tempo real
@@ -22,7 +22,7 @@ class NovoPedidoRequest(BaseModel):
     itens: List[ItemPedidoInput]
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def lançar_pedido(payload: NovoPedidoRequest, db: Session = Depends(get_db)):
+async def lançar_pedido(payload: NovoPedidoRequest, db: AsyncSession = Depends(get_async_db)):
     """
     Registra o pedido e avisa a cozinha/bar instantaneamente via WebSocket se vier do cliente.
     """
@@ -32,8 +32,8 @@ async def lançar_pedido(payload: NovoPedidoRequest, db: Session = Depends(get_d
     repo = PedidoRepository(db)
     itens_dict = [item.model_dump() for item in payload.itens]
     
-    # Passamos o campo origem adaptado ao novo banco
-    pedido = repo.criar_pedido(
+    # 🔄 CORREÇÃO: Operação de criação de pedido adaptada para await assíncrono
+    pedido = await repo.criar_pedido(
         mesa_id=payload.mesa_id,
         comanda_id=payload.comanda_id,
         itens_data=itens_dict
